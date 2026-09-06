@@ -46,9 +46,9 @@ def cmd_login():
         return
 
     print(t("login_scan_prompt"))
-    render_terminal_qr(qr_url)
+    render_terminal_qr(qr_url, direct_link=qr_url)
 
-    cookies = poll_qr_login(ticket)
+    cookies = poll_qr_login(ticket, lp_url=lp_url)
     if not cookies or "new_bbs_serviceToken" not in cookies:
         print(t("login_timeout"))
         return

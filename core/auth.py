@@ -81,40 +81,58 @@ def request_qr_ticket() -> Tuple[Optional[str], Optional[str], Optional[str]]:
     return None, None, None
 
 
-def render_terminal_qr(content: str) -> None:
-    """Renders the QR code directly in the terminal as pure Unicode blocks."""
+def render_terminal_qr(content: str, direct_link: Optional[str] = None) -> None:
+    """Renders the QR code in terminal and always displays the clickable authentication link."""
+    has_rendered = False
     if segno is not None:
         try:
             qr = segno.make(content, error="m")
             print()
             qr.terminal(compact=True)
             print()
-            return
+            has_rendered = True
         except Exception:
             pass
-    print("\n" + "=" * 60)
-    print(" [!] Notice: Install 'segno' (pip install segno) to view QR in terminal.")
-    print(f" [Authentication Link]: {content}")
-    print("=" * 60 + "\n")
+
+    link = direct_link or content
+    print("=" * 65)
+    if not has_rendered:
+        print(" [!] Notice: Install 'segno' (pip install segno) to view visual QR code.")
+    print(" [+] Direct Link (Open in mobile browser if you don't scan QR):")
+    print(f"     {link}")
+    print("=" * 65 + "\n")
 
 
-def poll_qr_login(ticket: str, timeout_seconds: int = 240) -> Optional[Dict[str, str]]:
+def poll_qr_login(ticket: str, lp_url: Optional[str] = None, timeout_seconds: int = 240) -> Optional[Dict[str, str]]:
     """
     Long-polls Xiaomi login servers until the user confirms on mobile or timeout expires.
     Uses automatic CookieJar tracking across redirects to ensure all session tokens are captured.
     """
-    poll_url = f"https://sgp.account.xiaomi.com/longPolling/login?ticket={ticket}&_json=true"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    # Prefer the dedicated dynamic long-polling endpoint returned by Xiaomi
+    primary_poll_url = lp_url or f"https://sgp.lp.account.xiaomi.com/lp/s?k={ticket}"
+    fallback_poll_url = f"https://sgp.account.xiaomi.com/longPolling/login?ticket={ticket}&_json=true"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "*/*"
+    }
     start_time = time.time()
     consecutive_errors = 0
 
     print("[*] Waiting for scan and confirmation on mobile device...")
     while time.time() - start_time < timeout_seconds:
+        poll_url = primary_poll_url if consecutive_errors < 2 else fallback_poll_url
         try:
             req = urllib.request.Request(poll_url, headers=headers)
             with urllib.request.urlopen(req, timeout=25) as resp:
                 raw = resp.read().decode("utf-8").replace("&&&START&&&", "")
-                data = json.loads(raw)
+                try:
+                    data = json.loads(raw)
+                except Exception:
+                    # In case of intermediate HTML redirect or gateway timeout
+                    time.sleep(1)
+                    continue
+
                 code = data.get("code")
                 consecutive_errors = 0
 
