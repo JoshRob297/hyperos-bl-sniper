@@ -1,0 +1,145 @@
+# HyperOS Bootloader Quota Sniper
+
+[English](README.md) | [Español](README.es.md)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)]()
+
+Sniper de red de alta frecuencia universal y multiplataforma para asegurar cupos diarios de desbloqueo de bootloader en Xiaomi HyperOS (`apply/bl-auth`).
+
+---
+
+## Comparativa Arquitectonica
+
+| Caracteristica | Scripts Clasicos por ADB | Herramientas Legacy de Bypass | HyperOS BL Sniper (Este Proyecto) |
+| :--- | :--- | :--- | :--- |
+| **Autenticacion** | Extraccion manual de cookies | Endpoints obsoletos (30001) | **Flujo Oficial por QR + Auto-Renovacion con passToken** |
+| **Modo de Disparo** | Disparo unico a ciegas | Intentos de spoofing (parchados) | **Rafaga Intercalada Double-Tap con Sockets Duales** |
+| **Plataforma** | Requiere celular USB conectado | Exclusivo de Windows | **Windows, macOS y Linux (CLI / Headless / VPS)** |
+| **Capa de Red** | Handshake TLS en frio (~500ms lag)| HTTP plano sin cifrar | **Precalentamiento Dual TLS Keep-Alive en Paralelo** |
+| **Compensacion de Transito** | Estimacion estatica | Ninguna | **Perfilado Pasivo TCP de Capa 4 (`RTT / 2`)** |
+| **Precision de Reloj** | Reloj del sistema operativo | Ninguna | **Multi-Servidor NTP + Bucle de Busy-Wait al Microsegundo** |
+| **Correccion de Sesgo** | Ninguna | Ninguna | **Analisis de Cabecera Date HTTP + Consenso Comunitario** |
+| **Accion Post-Aprobacion** | Ninguna | Ninguna | **Desprogramacion Automatica + Guia Clara de Siguientes Pasos** |
+
+---
+
+## Tecnologias Centrales
+
+### 1. Rafaga Intercalada Double-Tap con Sockets Duales
+La ventana de apertura de cupos de Xiaomi dura apenas entre 50 y 150 milisegundos. Para eliminar el riesgo de disparar unos milisegundos temprano y evitar que la competencia gane el cupo, el sniper precalienta dos conexiones TLS independientes en paralelo:
+* **Socket A (Primario):** Enviado a `target_epoch - one_way_transit - bias` con payload `is_retry: false`.
+* **Socket B (Paracaidas):** Enviado exactamente `+100ms` despues con payload `is_retry: true`.
+Si el socket primario llega una fraccion de segundo antes de medianoche, el secundario entra en la ventana activa del servidor.
+
+### 2. Ciclo de Vida Autonomo del Token (Recuperacion con `passToken`)
+Al iniciar sesion mediante codigo QR, la herramienta almacena de forma segura `userId`, `new_bbs_serviceToken` y el `passToken` permanente de Xiaomi. Si el token de servicio expira (`codigo: 100004`), el sniper contacta de manera reactiva y transparente a `account.xiaomi.com/pass/serviceLogin` para obtener un nuevo token de sesion sin interrumpir la ejecucion ni requerir intervencion del usuario.
+
+### 3. Red de Inteligencia Colectiva
+Los nodos que ejecutan el script en el mundo reportan metricas anonimas de tiempo de transito (RTT, sesgo aplicado, respuesta del servidor) a un endpoint edge aislado. Un motor de consenso diario (clustering 1D DBSCAN, mediana truncada y filtros Anti-Sybil) calcula el sesgo ganador y publica `community_bias.json` en GitHub. Los clientes sincronizan este sesgo optimo antes del disparo. Cero datos personales, credenciales o identificadores de hardware son transmitidos.
+
+---
+
+## Inicio Rapido
+
+### 1. Clonar e Instalar Dependencias
+```bash
+git clone git@github.com:JoshRob297/hyperos-bl-sniper.git
+cd hyperos-bl-sniper
+pip install -r requirements.txt
+```
+
+### 2. Inicio de Sesion Oficial por QR en Terminal
+Sin necesidad de herramientas de desarrollador (F12) ni busqueda manual de cookies:
+```bash
+python cli.py login
+```
+Escanea el codigo QR ASCII mostrado en la terminal usando la app **Mi Account** o la Camara en tu dispositivo Xiaomi. El asistente te preguntara si deseas activar la Red de Inteligencia Colectiva para sincronizar la calibracion comunitaria.
+
+### 3. Comprobar Sesion y Estado de Cuenta
+```bash
+python cli.py status
+```
+Muestra la validez del token, estado de la tarea programada en el sistema operativo y permisos oficiales (`is_pass`, fecha limite y periodos de penalizacion activos).
+
+### 4. Activar Disparo Automatico Diario (Multiplataforma)
+Registra automaticamente una tarea en segundo plano en tu sistema operativo (Crontab en Linux, `launchd` en macOS, o Programador de Tareas en Windows) configurada para despertar 2 minutos antes de medianoche hora de Beijing (00:00:00 GMT+8):
+```bash
+python cli.py schedule
+```
+Para desactivar la tarea programada en cualquier momento:
+```bash
+python cli.py unschedule
+```
+
+---
+
+## Modo Standalone / Suspension Profunda (Deep Sleep)
+Si ejecutas el bot manualmente en un VPS, servidor o contenedor:
+```bash
+python cli.py run
+```
+* **Proteccion contra ejecucion temprana:** Si se ejecuta con mas de 15 minutos de anticipacion, el bot entra en **Modo Deep Sleep**, consumiendo cero CPU y cero red hasta T-15 minutos.
+* **T-15m:** Despierta, resincroniza desfase NTP, perfila latencia pasiva TCP y descarga el sesgo comunitario.
+* **T-12s:** Precalienta ambos sockets TLS hacia los clusters edge de Singapur.
+* **T-0:** Entra en bucle busy-wait al microsegundo y dispara la rafaga Double-Tap.
+* **T+2s:** Evalua la respuesta del servidor, guarda la calibracion adaptativa, despacha notificaciones y desprograma la tarea si fue aprobado.
+
+---
+
+## Configuracion (`config.json`)
+
+```json
+{
+  "auth": {
+    "userId": "1234567890",
+    "cUserId": "h4sh3d_s3cr3t",
+    "new_bbs_serviceToken": "token_aqui",
+    "passToken": "token_permanente_aqui",
+    "deviceId": "STABLE_ANONYMOUS_ID",
+    "versionCode": "500439",
+    "versionName": "5.4.39"
+  },
+  "sniper": {
+    "mode": "double_tap",
+    "tap_interval_ms": 100.0
+  },
+  "calibration": {
+    "auto_tune": true,
+    "bias_ms": 0.0
+  },
+  "community": {
+    "share_metrics": true,
+    "fetch_global_bias": true
+  },
+  "language": "es",
+  "telegram": {
+    "bot_token": "",
+    "chat_id": ""
+  }
+}
+```
+
+---
+
+## Pasos Criticos al Ser Aprobado
+Una vez que el sniper obtiene el cupo, imprime una guia clara en consola y envia la notificacion:
+1. Inserta una tarjeta SIM con **datos moviles activos** en tu celular Xiaomi.
+2. **Apaga el Wi-Fi** (la vinculacion falla obligatoriamente bajo conexiones Wi-Fi).
+3. Ve a: **Ajustes -> Ajustes adicionales -> Opciones de desarrollador -> Estado de Mi Unlock**.
+4. Toca en **Agregar cuenta y dispositivo**.
+5. Comenzara tu periodo de espera oficial (ejemplo: 72 horas). Una vez transcurrido, conecta por USB y desbloquea en PC.
+
+---
+
+## Suite de Pruebas
+Ejecuta la suite integrada de pruebas unitarias y de regresion (23 tests que cubren criptografia, zonas horarias, auto-renovacion de tokens, sanitizacion de telemetria y formato Clean UI):
+```bash
+python test_suite.py
+```
+
+---
+
+## Licencia
+Este proyecto esta licenciado bajo la [Licencia MIT](LICENSE).

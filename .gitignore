@@ -1,0 +1,22 @@
+# Credentials and Local Configuration
+config.json
+*.token
+*.cookie
+.env
+
+# Logs and debug
+*.log
+logs/
+
+# Python cache and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# OS specific
+.DS_Store
+Thumbs.db

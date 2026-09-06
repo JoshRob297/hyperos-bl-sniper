@@ -1,0 +1,15 @@
+{
+  "auth": {
+    "userId": "YOUR_XIAOMI_USER_ID",
+    "cUserId": "YOUR_C_USER_ID_HASH",
+    "new_bbs_serviceToken": "YOUR_BBS_SERVICE_TOKEN"
+  },
+  "telegram": {
+    "bot_token": "",
+    "chat_id": ""
+  },
+  "community": {
+    "share_metrics": true,
+    "fetch_global_bias": true
+  }
+}
