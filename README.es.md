@@ -45,12 +45,23 @@ Los nodos que ejecutan el script en el mundo reportan metricas anonimas de tiemp
 
 ### 1. Clonar e Instalar Dependencias
 ```bash
-git clone git@github.com:JoshRob297/hyperos-bl-sniper.git
+git clone https://github.com/JoshRob297/hyperos-bl-sniper.git
 cd hyperos-bl-sniper
 pip install -r requirements.txt
 ```
 
-### 2. Inicio de Sesion con Asistente Oficial
+### 2. Ejecucion Autonoma en Un Solo Comando (Recomendado)
+Ejecuta un unico comando que verifica autenticacion, programa la tarea diaria y entra al bucle de disparo:
+```bash
+python cli.py start
+```
+Si no existe sesion previa, el asistente interactivo te guiara para iniciar sesion. Una vez guardada, valida la elegibilidad de tu cuenta, programa la tarea diaria en el sistema operativo y espera en modo Deep Sleep hasta la hora de apertura del cupo.
+
+---
+
+## Comandos Detallados
+
+### Inicio de Sesion con Asistente Oficial
 Compatible con autorizacion en navegador, credenciales en terminal o inyeccion manual:
 ```bash
 python cli.py login
@@ -58,13 +69,13 @@ python cli.py login
 * **Opcion 1 (Asistente oficial via `migate`):** Abre la pagina oficial de Xiaomi en navegador (Browser), permite ingresar credenciales/OTP en consola (Terminal), o muestra codigo QR.
 * **Opcion 2 (Inyeccion manual de cookies):** Pega directamente tu `userId` y `new_bbs_serviceToken` copiados desde [c.mi.com](https://c.mi.com) con las herramientas de desarrollador (F12). Tambien accesible mediante `python cli.py login --manual`.
 
-### 3. Comprobar Sesion y Estado de Cuenta
+### Comprobar Sesion y Estado de Cuenta
 ```bash
 python cli.py status
 ```
 Muestra la validez del token, estado de la tarea programada en el sistema operativo y permisos oficiales (`is_pass`, fecha limite y periodos de penalizacion activos).
 
-### 4. Activar Disparo Automatico Diario (Multiplataforma)
+### Activar Disparo Automatico Diario (Multiplataforma)
 Registra automaticamente una tarea en segundo plano en tu sistema operativo (Crontab en Linux, `launchd` en macOS, o Programador de Tareas en Windows) configurada para despertar 2 minutos antes de medianoche hora de Beijing (00:00:00 GMT+8):
 ```bash
 python cli.py schedule
@@ -73,6 +84,39 @@ Para desactivar la tarea programada en cualquier momento:
 ```bash
 python cli.py unschedule
 ```
+
+---
+
+## Seguridad de Cuenta y Reglas Anti-Baneo
+El sistema de control de riesgo de Xiaomi es sensible a cambios bruscos de red e IP durante la solicitud de cupo:
+* **Evita VPNs / Proxies:** Ejecuta el bot directamente sobre la conexion nativa de tu proveedor de Internet (fibra residencial / IP real). Los saltos de VPN aumentan la latencia y disparan bloqueos temporales (`Account Error / codigo 6`).
+* **No cambies de red:** Nunca alternes entre Wi-Fi y datos moviles cerca de la hora de reinicio. Manten una sola conexion estable.
+* **Evita DNS personalizados:** Utiliza el DNS de tu ISP o resolvedores locales estandar para evitar desvios de enrutamiento detectados por Xiaomi.
+* **Una sola instancia por cuenta:** No intentes solicitar cupo con la misma cuenta en multiples terminales simultaneamente.
+
+---
+
+## Referencia de Codigos de Respuesta
+
+### Codigos de Solicitud de Cupo (`apply/bl-auth`)
+
+| Codigo | Estado | Significado |
+| :---: | :--- | :--- |
+| **`1`** | `[APROBADA]` | Cupo otorgado. Permiso de desbloqueo de bootloader activo hasta fecha limite. |
+| **`2`** | `[ERROR_CUENTA]` | Error de cuenta o restriccion temporal. Intentar despues de la fecha limite. |
+| **`3`** | `[AGOTADO]` | Cupo diario agotado antes de la llegada de la solicitud. Proxima apertura a las 00:00 GMT+8. |
+| **`4`** | `[FALLIDA]` | Solicitud fallida. Intentar en la siguiente ventana diaria. |
+| **`5`** | `[ESPERA]` | Limite de tasa temporal activado. Esperar un minuto antes de reintentar. |
+| **`6`** | `[CONTROL_RIESGO]` | Control de riesgo activado en el servidor. Evitar sondeos agresivos. |
+
+### Codigos de Estado y Elegibilidad (`bl-switch/state`)
+
+| Codigo (`is_pass` / `button_state`) | Estado | Significado |
+| :---: | :--- | :--- |
+| `is_pass == 1` | `[APROBADA]` | Permiso ya activo. No es necesario disparar. |
+| `is_pass == 4`, `btn == 1` | `[READY]` | Cuenta elegible. Lista para disparar a las 00:00 GMT+8. |
+| `is_pass == 4`, `btn == 2` | `[BLOQUEADA]` | Enfriamiento temporal activo hasta fecha limite. |
+| `is_pass == 4`, `btn == 3` | `[ACCOUNT_TOO_NEW]`| Cuenta creada hace menos de 30 dias. Aun no elegible. |
 
 ---
 

@@ -45,12 +45,23 @@ Nodes running around the world report anonymous timing metrics (RTT, applied bia
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone git@github.com:JoshRob297/hyperos-bl-sniper.git
+git clone https://github.com/JoshRob297/hyperos-bl-sniper.git
 cd hyperos-bl-sniper
 pip install -r requirements.txt
 ```
 
-### 2. Login via Authentication Assistant
+### 2. Autonomous One-Click Execution (Recommended)
+Run a single command that verifies authentication, auto-schedules the daily task, and enters the sniper loop:
+```bash
+python cli.py start
+```
+If no session exists, the assistant prompts for login. Once saved, it validates eligibility, schedules the daily OS background task, and waits in Deep Sleep mode until quota opening.
+
+---
+
+## Detailed Commands
+
+### Login via Authentication Assistant
 Supports official browser authorization, terminal password/OTP, and manual cookie injection:
 ```bash
 python cli.py login
@@ -58,13 +69,13 @@ python cli.py login
 * **Option 1 (Official Assistant via `migate`):** Opens official Xiaomi web login (Browser), prompts terminal credentials (Terminal), or renders QR code.
 * **Option 2 (Manual Cookie Injection):** Directly paste `userId` and `new_bbs_serviceToken` copied from [c.mi.com](https://c.mi.com) using browser developer tools (F12). Also accessible via `python cli.py login --manual`.
 
-### 3. Check Session & Account Status
+### Check Session & Account Status
 ```bash
 python cli.py status
 ```
 Displays current token validity, daily scheduled job status, and server permissions (`is_pass`, deadline, and remaining penalty intervals).
 
-### 4. Enable Daily Auto-Snipe (Cross-Platform)
+### Enable Daily Auto-Snipe (Cross-Platform)
 Registers an automated background job in your operating system (Crontab on Linux, `launchd` on macOS, or Task Scheduler on Windows) set to fire 2 minutes before midnight Beijing time (00:00:00 GMT+8):
 ```bash
 python cli.py schedule
@@ -73,6 +84,39 @@ To remove the scheduled task at any time:
 ```bash
 python cli.py unschedule
 ```
+
+---
+
+## Rate-Limit & Account Safety (Anti-Ban Rules)
+Xiaomi's risk control system is sensitive to network and IP changes during quota requests:
+* **Avoid VPNs / Proxies:** Execute directly on your primary ISP connection (residential fiber / native IP). VPN egress hops increase latency and risk triggering temporary blocks (`Account Error / code 6`).
+* **Do Not Switch Networks:** Never switch between Wi-Fi and mobile data close to the quota reset time. Keep one stable connection.
+* **Avoid Custom DNS:** Standard ISP DNS or local resolvers prevent routing changes that trip Xiaomi's security filters.
+* **Single Instance per Account:** Run only one instance per Xiaomi account to avoid triggering rate limits.
+
+---
+
+## Response Codes Reference
+
+### `apply` Quota Request Codes (`apply/bl-auth`)
+
+| Code | Status | Meaning |
+| :---: | :--- | :--- |
+| **`1`** | `[APPROVED]` | Quota granted. Bootloader unlock permission active until deadline. |
+| **`2`** | `[ACCOUNT_ERROR]` | Account error or temporary restriction. Retry after deadline. |
+| **`3`** | `[EXHAUSTED]` | Daily quota exhausted before request arrival. Next window at 00:00 GMT+8. |
+| **`4`** | `[FAILED]` | Application failed. Retry on subsequent window. |
+| **`5`** | `[WAIT]` | Short-term rate limit triggered. Retry in one minute. |
+| **`6`** | `[RISK_CONTROL]` | Server risk control active. Avoid aggressive polling. |
+
+### `state` Account Eligibility Codes (`bl-switch/state`)
+
+| Code (`is_pass` / `button_state`) | Status | Meaning |
+| :---: | :--- | :--- |
+| `is_pass == 1` | `[APPROVED]` | Permission already active. No need to shoot. |
+| `is_pass == 4`, `btn == 1` | `[READY]` | Account eligible. Ready to fire at 00:00 GMT+8. |
+| `is_pass == 4`, `btn == 2` | `[TEMP_BLOCKED]` | Temporary cooldown active until deadline. |
+| `is_pass == 4`, `btn == 3` | `[ACCOUNT_TOO_NEW]`| Account younger than 30 days. Not yet eligible. |
 
 ---
 

@@ -216,24 +216,37 @@ class TestHyperOSSniper(unittest.TestCase):
         # Prueba en español explicito
         msg_ok_es = translate_xiaomi_result(0, 1, "09/30", lang="es")
         self.assertIn("APROBADA", msg_ok_es)
+        msg_acct_err_es = translate_xiaomi_result(0, 2, "09/15", lang="es")
+        self.assertIn("ERROR_CUENTA", msg_acct_err_es)
         msg_quota_es = translate_xiaomi_result(0, 3, "09/07 00:00", lang="es")
         self.assertIn("Cupo diario agotado", msg_quota_es)
-        msg_blocked_es = translate_xiaomi_result(0, 4, "09/15", lang="es")
-        self.assertIn("bloqueada temporalmente", msg_blocked_es)
+        msg_failed_es = translate_xiaomi_result(0, 4, "", lang="es")
+        self.assertIn("FALLIDA", msg_failed_es)
+        msg_minute_es = translate_xiaomi_result(0, 5, "", lang="es")
+        self.assertIn("ESPERA", msg_minute_es)
+        msg_risk_es = translate_xiaomi_result(0, 6, "", lang="es")
+        self.assertIn("CONTROL_RIESGO", msg_risk_es)
         msg_token_es = translate_xiaomi_result(100004, None, lang="es")
         self.assertIn("expirado", msg_token_es)
 
         # Prueba en ingles explicito
         msg_ok_en = translate_xiaomi_result(0, 1, "09/30", lang="en")
         self.assertIn("APPROVED", msg_ok_en)
+        msg_acct_err_en = translate_xiaomi_result(0, 2, "09/15", lang="en")
+        self.assertIn("ACCOUNT_ERROR", msg_acct_err_en)
         msg_quota_en = translate_xiaomi_result(0, 3, "09/07 00:00", lang="en")
         self.assertIn("Daily quota exhausted", msg_quota_en)
-        msg_blocked_en = translate_xiaomi_result(0, 4, "09/15", lang="en")
-        self.assertIn("temporarily blocked", msg_blocked_en)
+        msg_failed_en = translate_xiaomi_result(0, 4, "", lang="en")
+        self.assertIn("FAILED", msg_failed_en)
+        msg_minute_en = translate_xiaomi_result(0, 5, "", lang="en")
+        self.assertIn("WAIT", msg_minute_en)
+        msg_risk_en = translate_xiaomi_result(0, 6, "", lang="en")
+        self.assertIn("RISK_CONTROL", msg_risk_en)
         msg_token_en = translate_xiaomi_result(100004, None, lang="en")
         self.assertIn("expired", msg_token_en)
 
-        for msg in [msg_ok_es, msg_quota_es, msg_blocked_es, msg_token_es, msg_ok_en, msg_quota_en, msg_blocked_en, msg_token_en]:
+        for msg in [msg_ok_es, msg_acct_err_es, msg_quota_es, msg_failed_es, msg_minute_es, msg_risk_es, msg_token_es,
+                    msg_ok_en, msg_acct_err_en, msg_quota_en, msg_failed_en, msg_minute_en, msg_risk_en, msg_token_en]:
             self.assertTrue(msg.startswith("["), f"El mensaje debe comenzar con etiqueta limpia: {msg}")
 
     def test_i18n_catalog_symmetry(self):

@@ -2,7 +2,8 @@
 """
 HyperOS Bootloader Quota Sniper (Unified Multi-Platform CLI)
 Usage:
-  python cli.py login       - Interactive terminal QR code authentication
+  python cli.py start       - Unified All-in-One: checks session, auto-schedules, and enters sniper loop
+  python cli.py login       - Interactive Xiaomi official assistant or manual cookie injection
   python cli.py status      - Checks token validity and permission state
   python cli.py schedule    - Auto-registers daily background task in OS
   python cli.py unschedule  - Removes background task
@@ -417,13 +418,80 @@ def cmd_run():
         sniper.close()
 
 
+def cmd_start():
+    """
+    Unified All-in-One workflow:
+    1. Checks if configuration and session exist. If not, launches login.
+    2. Validates account status and eligibility.
+    3. Auto-configures daily background schedule if not yet active.
+    4. Runs deep-sleep waiting loop until quota trigger time.
+    """
+    config = load_config(CONFIG_PATH) or {}
+    if "language" in config:
+        set_language(config["language"])
+
+    print("=" * 65)
+    print("   HyperOS BL Sniper - All-in-One Autonomous Execution")
+    print("=" * 65)
+
+    # Step 1: Ensure authentication
+    if not config or "auth" not in config:
+        print("\n[*] Initial setup: No active session found. Launching authentication...")
+        cmd_login()
+        config = load_config(CONFIG_PATH) or {}
+        if not config or "auth" not in config:
+            print("[ERROR] Setup incomplete. Run 'python cli.py login' to authenticate.")
+            return
+
+    # Step 2: Validate account state
+    cookies = config.get("auth", {})
+    user_id = cookies.get("userId", "N/A")
+    print(f"\n[*] Checking account status for ID: {user_id}...")
+    valid, data = check_session(cookies)
+    if not valid:
+        code = data.get("code")
+        if code == 100004 and cookies.get("passToken"):
+            print("[*] Session token expired. Auto-renewing with passToken...")
+            ok_renew, new_tok, _ = refresh_service_token_via_passtoken(cookies)
+            if ok_renew and new_tok:
+                cookies["new_bbs_serviceToken"] = new_tok
+                cookies["obtained_at"] = int(time.time())
+                config["auth"] = cookies
+                save_config(config, CONFIG_PATH)
+                valid, data = check_session(cookies)
+
+        if not valid:
+            print(f"[ERROR] Session invalid for account {user_id}. Run 'python cli.py login'.")
+            return
+
+    can_fire, status_code, state_msg = interpret_account_state(data)
+    if not can_fire:
+        if status_code == "APPROVED":
+            print(f"[OK] Account already approved: {state_msg}")
+            disable_schedule()
+        else:
+            print(f"[!] Account not eligible to shoot today: {state_msg}")
+        return
+
+    # Step 3: Ensure daily background task is scheduled
+    if not is_scheduled():
+        print("[*] Registering automatic daily background schedule in OS...")
+        enable_schedule(__file__)
+
+    # Step 4: Hand over directly to high-precision sniper loop
+    print("\n[*] Initial checks passed. Entering autonomous sniper loop...")
+    cmd_run()
+
+
 def main():
     if len(sys.argv) < 2:
-        print(__doc__)
+        cmd_start()
         return
 
     cmd = sys.argv[1].lower()
-    if cmd == "login":
+    if cmd in ("start", "--start"):
+        cmd_start()
+    elif cmd == "login":
         cmd_login()
     elif cmd == "status":
         cmd_status()

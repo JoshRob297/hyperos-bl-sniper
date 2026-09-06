@@ -32,10 +32,14 @@ def translate_xiaomi_result(code: Optional[int], apply_result: Optional[int], de
 
     if apply_result == 1:
         return t("res_approved", lang=lang, deadline=deadline)
+    elif apply_result == 2:
+        return t("res_account_error", lang=lang, deadline=deadline)
     elif apply_result == 3:
         return t("res_exhausted", lang=lang, deadline=deadline)
     elif apply_result == 4:
-        return t("res_blocked", lang=lang, deadline=deadline)
+        return t("res_apply_failed", lang=lang)
+    elif apply_result == 5:
+        return t("res_try_minute", lang=lang)
     elif apply_result == 6:
         return t("res_risk_control", lang=lang)
     else:
