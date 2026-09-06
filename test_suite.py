@@ -15,7 +15,7 @@ sys.path.insert(0, ROOT_DIR)
 
 from core.network import get_next_beijing_midnight, measure_tcp_rtt, SnipeSession
 from core.ntp import get_ntp_offset, wait_until
-from core.auth import load_config, save_config, interpret_account_state, should_renew_token
+from core.auth import load_config, save_config, interpret_account_state, should_renew_token, format_button_state, format_pass_state
 from core.calibration import parse_server_date_epoch, evaluate_shot_feedback, update_config_calibration, translate_xiaomi_result
 from core.scheduler import is_scheduled
 from core.community import sanitize_telemetry_payload, generate_ephemeral_node_id, fetch_community_bias
@@ -361,6 +361,33 @@ class TestHyperOSSniper(unittest.TestCase):
         self.assertNotEqual(auth["deviceId"], "wb_unwanted_web_id")
         self.assertEqual(len(auth["deviceId"]), 40)
         self.assertTrue(all(c in "0123456789ABCDEFabcdef" for c in auth["deviceId"]))
+
+    def test_button_and_pass_state_normalization(self):
+        # Pruebas en español
+        btn_1_es = format_button_state(1, lang="es")
+        self.assertIn("[HABILITADO]", btn_1_es)
+        btn_2_es = format_button_state(2, lang="es")
+        self.assertIn("[ENFRIAMIENTO]", btn_2_es)
+        btn_3_es = format_button_state(3, lang="es")
+        self.assertIn("[RESTRINGIDO]", btn_3_es)
+
+        pass_1_es = format_pass_state(1, lang="es")
+        self.assertIn("[APROBADO]", pass_1_es)
+        pass_4_es = format_pass_state(4, lang="es")
+        self.assertIn("[PENDIENTE]", pass_4_es)
+
+        # Pruebas en ingles
+        btn_1_en = format_button_state(1, lang="en")
+        self.assertIn("[ENABLED]", btn_1_en)
+        btn_2_en = format_button_state(2, lang="en")
+        self.assertIn("[COOLDOWN]", btn_2_en)
+        btn_3_en = format_button_state(3, lang="en")
+        self.assertIn("[RESTRICTED]", btn_3_en)
+
+        pass_1_en = format_pass_state(1, lang="en")
+        self.assertIn("[APPROVED]", pass_1_en)
+        pass_4_en = format_pass_state(4, lang="en")
+        self.assertIn("[PENDING]", pass_4_en)
 
 
 if __name__ == "__main__":

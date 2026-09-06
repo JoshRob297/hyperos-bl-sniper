@@ -18,7 +18,8 @@ import datetime
 from core.auth import (
     load_config, save_config, request_qr_ticket, render_terminal_qr,
     poll_qr_login, check_session, interpret_account_state,
-    should_renew_token, refresh_service_token_via_passtoken
+    should_renew_token, refresh_service_token_via_passtoken,
+    format_button_state, format_pass_state
 )
 from core.calibration import evaluate_shot_feedback, update_config_calibration, translate_xiaomi_result
 from core.ntp import get_ntp_offset, wait_until
@@ -107,12 +108,16 @@ def cmd_status():
     print(t("status_sched", state=sched_label))
     if valid:
         can_fire, status_code, state_msg = interpret_account_state(data)
-        btn_state = data.get("data", {}).get("button_state")
-        is_pass = data.get("data", {}).get("is_pass")
+        raw_btn_state = data.get("data", {}).get("button_state")
+        raw_is_pass = data.get("data", {}).get("is_pass")
         deadline = data.get("data", {}).get("deadline_format", "N/A")
+
+        btn_label = format_button_state(raw_btn_state)
+        pass_label = format_pass_state(raw_is_pass)
+
         print(t("status_token_valid"))
-        print(t("status_is_pass", is_pass=is_pass))
-        print(t("status_btn_state", btn_state=btn_state))
+        print(t("status_is_pass", is_pass=pass_label))
+        print(t("status_btn_state", btn_state=btn_label))
         print(t("status_deadline", deadline=deadline))
         print(t("status_diag", state_msg=state_msg))
         cal_cfg = config.get("calibration", {})

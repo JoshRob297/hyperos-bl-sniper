@@ -347,3 +347,27 @@ def interpret_account_state(data: Dict[str, Any]) -> Tuple[bool, str, str]:
         return True, "UNKNOWN", f"Estado de cuenta no reconocido (button_state={button_state}); se intentará el disparo."
 
     return True, "UNKNOWN", f"Estado de cuenta no reconocido (is_pass={is_pass}); se intentará el disparo."
+
+
+def format_button_state(state: Any, lang: Optional[str] = None) -> str:
+    """Normalizes raw Xiaomi button_state integer into localized human-readable labels."""
+    from core.i18n import t
+    s = str(state)
+    if s == "1":
+        return t("btn_ready", lang=lang)
+    elif s == "2":
+        return t("btn_cooldown", lang=lang)
+    elif s == "3":
+        return t("btn_too_new", lang=lang)
+    return t("btn_unknown", lang=lang, state=state)
+
+
+def format_pass_state(is_pass: Any, lang: Optional[str] = None) -> str:
+    """Normalizes raw Xiaomi is_pass integer into localized human-readable labels."""
+    from core.i18n import t
+    s = str(is_pass)
+    if s in ("1", "True", "true"):
+        return t("pass_approved", lang=lang)
+    elif s in ("4", "4.0"):
+        return t("pass_pending", lang=lang)
+    return t("pass_unknown", lang=lang, is_pass=is_pass)
