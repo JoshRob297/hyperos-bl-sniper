@@ -178,10 +178,15 @@ Once the sniper wins a quota, it prints a post-approval runbook and dispatches a
 ---
 
 ## Test Suite
-Run the built-in regression test suite (23 unit tests covering cryptography, time zones, token auto-renewal, network payload sanitization, and clean output):
+Run the built-in regression test suite (26 unit tests covering cryptography, time zones, token auto-renewal, network payload sanitization, and clean output):
 ```bash
 python test_suite.py
 ```
+
+---
+
+## Credits & Acknowledgments
+* **[offici5l / MiForge](https://github.com/offici5l/migate):** Author of the `migate` Python gateway library used for official Xiaomi account authorization and session handshakes, as well as the reference response code mappings from `MiCommunityTool`.
 
 ---
 

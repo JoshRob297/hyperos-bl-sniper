@@ -179,10 +179,15 @@ Una vez que el sniper obtiene el cupo, imprime una guia clara en consola y envia
 ---
 
 ## Suite de Pruebas
-Ejecuta la suite integrada de pruebas unitarias y de regresion (23 tests que cubren criptografia, zonas horarias, auto-renovacion de tokens, sanitizacion de telemetria y formato Clean UI):
+Ejecuta la suite integrada de pruebas unitarias y de regresion (26 tests que cubren criptografia, zonas horarias, auto-renovacion de tokens, sanitizacion de telemetria y formato Clean UI):
 ```bash
 python test_suite.py
 ```
+
+---
+
+## Creditos y Reconocimientos
+* **[offici5l / MiForge](https://github.com/offici5l/migate):** Autor de la libreria `migate`, pasarela de autenticacion oficial de Xiaomi para Python utilizada en este proyecto para el inicio de sesion seguro, asi como por la referencia de codigos de respuesta de `MiCommunityTool`.
 
 ---
 
