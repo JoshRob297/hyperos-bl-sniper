@@ -26,6 +26,7 @@ from core.scheduler import enable_schedule, disable_schedule, is_scheduled
 from core.notifier import dispatch_notification
 from core.community import fetch_community_bias, report_telemetry_async
 from core.i18n import t, set_language, get_language
+from core.migate_auth import login_with_migate, login_manual_prompt
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
@@ -35,25 +36,32 @@ def cmd_login():
     if "language" in config:
         set_language(config["language"])
 
-    print("=" * 60)
+    # Check for direct manual flag: python cli.py login --manual
+    is_manual = "--manual" in sys.argv
+
+    print("=" * 65)
     print(t("login_banner"))
-    print("=" * 60)
-    print(t("login_contacting"))
+    print("=" * 65)
 
-    ticket, qr_url, lp_url = request_qr_ticket()
-    if not ticket or not qr_url:
-        print(t("login_ticket_error"))
-        return
+    if not is_manual:
+        print("\n" + t("login_menu_title"))
+        try:
+            choice = input("\n" + t("login_menu_prompt")).strip()
+            if choice == "2":
+                is_manual = True
+        except (KeyboardInterrupt, EOFError):
+            return
 
-    print(t("login_scan_prompt"))
-    render_terminal_qr(qr_url, direct_link=qr_url)
+    if is_manual:
+        auth_block = login_manual_prompt()
+    else:
+        auth_block = login_with_migate()
 
-    cookies = poll_qr_login(ticket, lp_url=lp_url)
-    if not cookies or "new_bbs_serviceToken" not in cookies:
+    if not auth_block:
         print(t("login_timeout"))
         return
 
-    config["auth"] = cookies
+    config["auth"] = auth_block
 
     # Configuracion comunitaria (Opt-in interactivo)
     if "community" not in config:
@@ -73,7 +81,7 @@ def cmd_login():
 
     print("\n" + "=" * 60)
     print(t("login_success"))
-    print(f" [OK] User ID: {cookies.get('userId')}")
+    print(f" [OK] User ID: {auth_block.get('userId')}")
     print(t("login_saved_config"))
     print("=" * 60)
 

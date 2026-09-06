@@ -50,12 +50,13 @@ cd hyperos-bl-sniper
 pip install -r requirements.txt
 ```
 
-### 2. Login via Terminal QR Code
-No developer tools (F12) or cookie hunting required:
+### 2. Login via Authentication Assistant
+Supports official browser authorization, terminal password/OTP, and manual cookie injection:
 ```bash
 python cli.py login
 ```
-Scan the ASCII QR code displayed in your terminal using the **Mi Account** app or Camera on your Xiaomi device. You will also be asked if you wish to enable the Collective Intelligence Network for automatic bias synchronization.
+* **Option 1 (Official Assistant via `migate`):** Opens official Xiaomi web login (Browser), prompts terminal credentials (Terminal), or renders QR code.
+* **Option 2 (Manual Cookie Injection):** Directly paste `userId` and `new_bbs_serviceToken` copied from [c.mi.com](https://c.mi.com) using browser developer tools (F12). Also accessible via `python cli.py login --manual`.
 
 ### 3. Check Session & Account Status
 ```bash

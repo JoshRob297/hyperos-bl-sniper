@@ -20,6 +20,7 @@ from core.calibration import parse_server_date_epoch, evaluate_shot_feedback, up
 from core.scheduler import is_scheduled
 from core.community import sanitize_telemetry_payload, generate_ephemeral_node_id, fetch_community_bias
 from core.i18n import t, set_language, get_language, STRINGS
+from core.migate_auth import build_auth_block
 from cli import format_duration
 
 
@@ -316,6 +317,37 @@ class TestHyperOSSniper(unittest.TestCase):
         id2 = generate_ephemeral_node_id()
         self.assertEqual(id1, id2)
         self.assertEqual(len(id1), 12)
+
+    def test_migate_auth_block_mapping_and_schema(self):
+        mock_pass_token = {
+            "userId": "6716513520",
+            "passToken": "pt_secret_token_123",
+            "deviceId": "wb_unwanted_web_id"
+        }
+        mock_service = {
+            "servicedata": {
+                "cUserId": "c_hash_987",
+                "ssecurity": "sec_dummy"
+            },
+            "cookies": {
+                "new_bbs_serviceToken": "bbs_token_abc_xyz",
+                "userId": "6716513520"
+            }
+        }
+        auth = build_auth_block(mock_pass_token, mock_service)
+
+        # Validaciones de correspondencia
+        self.assertEqual(auth["userId"], "6716513520")
+        self.assertEqual(auth["cUserId"], "c_hash_987")
+        self.assertEqual(auth["new_bbs_serviceToken"], "bbs_token_abc_xyz")
+        self.assertEqual(auth["passToken"], "pt_secret_token_123")
+        self.assertEqual(auth["versionCode"], "500439")
+        self.assertEqual(auth["versionName"], "5.4.39")
+
+        # Debe generar un deviceId en formato SHA1 hex estricto (no el wb_ de migate)
+        self.assertNotEqual(auth["deviceId"], "wb_unwanted_web_id")
+        self.assertEqual(len(auth["deviceId"]), 40)
+        self.assertTrue(all(c in "0123456789ABCDEFabcdef" for c in auth["deviceId"]))
 
 
 if __name__ == "__main__":

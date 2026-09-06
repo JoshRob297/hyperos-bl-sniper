@@ -59,7 +59,9 @@ def get_language() -> str:
 STRINGS = {
     "en": {
         # Login
-        "login_banner": "   HyperOS BL Sniper - Official Terminal QR Authentication",
+        "login_banner": "   HyperOS BL Sniper - Official Authentication Assistant",
+        "login_menu_title": "Choose login method:\n  1. Official Authentication Assistant (Browser / Terminal / QR - Recommended)\n  2. Manual Cookie Injection (Paste from browser)",
+        "login_menu_prompt": "Choose (1-2) [default: 1]: ",
         "login_contacting": "[*] Contacting Xiaomi servers for authentication ticket...",
         "login_ticket_error": "[ERROR] Failed to obtain Xiaomi ticket. Check your Internet connection.",
         "login_scan_prompt": "\n[+] Scan this QR code with Mi Account app, Camera, or Xiaomi Community:",
@@ -144,7 +146,9 @@ STRINGS = {
     },
     "es": {
         # Login
-        "login_banner": "   HyperOS BL Sniper - Inicio de Sesion Oficial por QR",
+        "login_banner": "   HyperOS BL Sniper - Asistente Oficial de Autenticacion",
+        "login_menu_title": "Elige el metodo de inicio de sesion:\n  1. Asistente Oficial (Navegador / Terminal / QR - Recomendado)\n  2. Inyeccion Manual de Cookies (Pegar desde navegador)",
+        "login_menu_prompt": "Elige opcion (1-2) [por defecto: 1]: ",
         "login_contacting": "[*] Contactando servidores de Xiaomi para generar ticket de acceso...",
         "login_ticket_error": "[ERROR] Error obteniendo ticket de Xiaomi. Verifica tu conexion a Internet.",
         "login_scan_prompt": "\n[+] Escanea este codigo QR con la app Mi Account, Camara o Xiaomi Community:",

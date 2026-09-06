@@ -50,12 +50,13 @@ cd hyperos-bl-sniper
 pip install -r requirements.txt
 ```
 
-### 2. Inicio de Sesion Oficial por QR en Terminal
-Sin necesidad de herramientas de desarrollador (F12) ni busqueda manual de cookies:
+### 2. Inicio de Sesion con Asistente Oficial
+Compatible con autorizacion en navegador, credenciales en terminal o inyeccion manual:
 ```bash
 python cli.py login
 ```
-Escanea el codigo QR ASCII mostrado en la terminal usando la app **Mi Account** o la Camara en tu dispositivo Xiaomi. El asistente te preguntara si deseas activar la Red de Inteligencia Colectiva para sincronizar la calibracion comunitaria.
+* **Opcion 1 (Asistente oficial via `migate`):** Abre la pagina oficial de Xiaomi en navegador (Browser), permite ingresar credenciales/OTP en consola (Terminal), o muestra codigo QR.
+* **Opcion 2 (Inyeccion manual de cookies):** Pega directamente tu `userId` y `new_bbs_serviceToken` copiados desde [c.mi.com](https://c.mi.com) con las herramientas de desarrollador (F12). Tambien accesible mediante `python cli.py login --manual`.
 
 ### 3. Comprobar Sesion y Estado de Cuenta
 ```bash

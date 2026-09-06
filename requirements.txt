@@ -1,2 +1,5 @@
 # Lightweight QR Code Generator in pure Python (No native C compilation needed)
 segno>=1.6.0
+
+# Xiaomi authentication gateway (interactive browser/terminal/SMS login)
+migate>=1.1.5
