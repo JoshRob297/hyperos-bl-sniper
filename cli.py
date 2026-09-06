@@ -65,7 +65,7 @@ def cmd_login():
 
     config["auth"] = auth_block
 
-    # Configuracion comunitaria (Opt-in interactivo)
+    # Configuracion comunitaria (Opt-in interactivo con reciprocidad obligatoria)
     if "community" not in config:
         print(t("login_community_title"))
         print(t("login_community_desc"))
@@ -78,6 +78,13 @@ def cmd_login():
             "share_metrics": opt_in,
             "fetch_global_bias": opt_in
         }
+
+    # Regla de Reciprocidad Simetrica: Si el usuario desea beneficiarse del bias comunitario,
+    # es obligatorio compartir metricas anonimas tras el disparo.
+    comm_cfg = config.get("community", {})
+    if comm_cfg.get("fetch_global_bias", False) and not comm_cfg.get("share_metrics", False):
+        comm_cfg["share_metrics"] = True
+        config["community"] = comm_cfg
 
     save_config(config, CONFIG_PATH)
 
@@ -314,8 +321,10 @@ def cmd_run():
     applied_bias_ms = float(cal_cfg.get("bias_ms", 0.0)) if auto_tune else 0.0
 
     # Consulta a la Red Comunitaria si no hay bias previo aprendido
+    # Principio de reciprocidad estricta: solo se descarga el bias si tambien se comparte
     comm_cfg = config.get("community", {"share_metrics": True, "fetch_global_bias": True})
-    if comm_cfg.get("fetch_global_bias", True) and applied_bias_ms == 0.0:
+    can_fetch = comm_cfg.get("fetch_global_bias", True) and comm_cfg.get("share_metrics", True)
+    if can_fetch and applied_bias_ms == 0.0:
         comm_bias_data = fetch_community_bias()
         if comm_bias_data and "recommended_bias_ms" in comm_bias_data:
             rec_bias = float(comm_bias_data["recommended_bias_ms"])

@@ -36,8 +36,16 @@ If the primary socket arrives slightly before midnight, the secondary socket hit
 ### 2. Autonomous Token Lifecycle (`passToken` Recovery)
 When authenticating via QR code, the tool securely stores `userId`, `new_bbs_serviceToken`, and Xiaomi's long-lived `passToken`. If the service token expires (`code: 100004`), the sniper automatically contacts `account.xiaomi.com/pass/serviceLogin` to obtain a fresh session token without user intervention.
 
-### 3. Collective Intelligence Network
-Nodes running around the world report anonymous timing metrics (RTT, applied bias, server response delta) to an isolated edge endpoint. A daily consensus algorithm (1D DBSCAN clustering, trimmed median, and strict Anti-Sybil gates) compiles the winning bias and publishes `community_bias.json` to GitHub. Nodes synchronize this recommended bias before shooting. Zero personal data, credentials, or hardware IDs are ever transmitted.
+### 3. Collective Intelligence Network & The Sweet Spot
+Securing a quota requires hitting the server within an ultra-narrow 50-150ms processing window. If you fire too early, Xiaomi rejects the request with the previous second's date header; if you fire too late, the competition takes the quota. The exact arrival point that wins is the **Sweet Spot**.
+
+To find and adapt to this moving target without guesswork:
+* **Strict Reciprocity Principle:** To benefit from the collective sweet spot calibration (`fetch_global_bias: true`), nodes must contribute their anonymous post-shot metrics (`share_metrics: true`). Leeching without sharing is disallowed by design.
+* **100% Anonymous Telemetry:** Nodes report strictly numerical metrics (Layer-4 TCP RTT, applied lead time, Xiaomi HTTP Date header delta, and outcome code). Identifiers (`userId`, `cUserId`, `serviceToken`, `passToken`, and hardware MAC/IMEI) are cryptographically stripped before transmission. Node IDs are deterministic ephemeral hashes that rotate daily (`sha256(machine + date)[:12]`), making cross-day user tracking physically impossible.
+* **Consensus Engine (1D DBSCAN + Trimmed Median):** The central aggregator filters out network outliers and attacks, calculates the cluster of winning nodes, and derives the daily optimal Sweet Spot offset (e.g. `+25.0 ms`).
+* **Inertia Clamping:** Daily shifts are restricted to a maximum of `+-15.0 ms/day` to guarantee smooth, stable calibration curves.
+
+Nodes synchronize this consensus Sweet Spot before firing, allowing new or uncalibrated users to benefit immediately from the community's learned precision.
 
 ---
 

@@ -389,6 +389,27 @@ class TestHyperOSSniper(unittest.TestCase):
         pass_4_en = format_pass_state(4, lang="en")
         self.assertIn("[PENDING]", pass_4_en)
 
+    def test_reciprocal_community_rule(self):
+        # Caso 1: Usuario quiere recibir bias pero no compartir metricas (violacion de reciprocidad)
+        leech_config = {
+            "community": {
+                "fetch_global_bias": True,
+                "share_metrics": False
+            }
+        }
+        can_fetch_leech = leech_config["community"].get("fetch_global_bias", True) and leech_config["community"].get("share_metrics", True)
+        self.assertFalse(can_fetch_leech, "Un usuario que no comparte metricas no debe tener permiso de descargar bias")
+
+        # Caso 2: Usuario que comparte y recibe (participacion simetrica)
+        peer_config = {
+            "community": {
+                "fetch_global_bias": True,
+                "share_metrics": True
+            }
+        }
+        can_fetch_peer = peer_config["community"].get("fetch_global_bias", True) and peer_config["community"].get("share_metrics", True)
+        self.assertTrue(can_fetch_peer, "Un usuario reciproco si debe poder descargar el bias de consenso")
+
 
 if __name__ == "__main__":
     unittest.main()

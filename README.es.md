@@ -36,8 +36,16 @@ Si el socket primario llega una fraccion de segundo antes de medianoche, el secu
 ### 2. Ciclo de Vida Autonomo del Token (Recuperacion con `passToken`)
 Al iniciar sesion mediante codigo QR, la herramienta almacena de forma segura `userId`, `new_bbs_serviceToken` y el `passToken` permanente de Xiaomi. Si el token de servicio expira (`codigo: 100004`), el sniper contacta de manera reactiva y transparente a `account.xiaomi.com/pass/serviceLogin` para obtener un nuevo token de sesion sin interrumpir la ejecucion ni requerir intervencion del usuario.
 
-### 3. Red de Inteligencia Colectiva
-Los nodos que ejecutan el script en el mundo reportan metricas anonimas de tiempo de transito (RTT, sesgo aplicado, respuesta del servidor) a un endpoint edge aislado. Un motor de consenso diario (clustering 1D DBSCAN, mediana truncada y filtros Anti-Sybil) calcula el sesgo ganador y publica `community_bias.json` en GitHub. Los clientes sincronizan este sesgo optimo antes del disparo. Cero datos personales, credenciales o identificadores de hardware son transmitidos.
+### 3. Red de Inteligencia Colectiva y el Punto Dulce (Sweet Spot)
+Conseguir un cupo de HyperOS exige impactar el servidor dentro de una ventana milimetrica de 50 a 150 milisegundos. Si disparas antes, Xiaomi rechaza la solicitud con la cabecera de fecha del segundo previo; si disparas despues, la competencia consume la cuota. El punto exacto de llegada que logra la aprobacion es el **Sweet Spot (Punto Dulce)**.
+
+Para descubrirlo y ajustarse dinamicamente sin adivinanzas:
+* **Regla de Reciprocidad Estricta:** Para beneficiarse de la calibracion comunitaria (`fetch_global_bias: true`), es obligatorio contribuir aportando las metricas anonimas tras el disparo (`share_metrics: true`). Beneficiarse sin compartir esta bloqueado por diseno.
+* **Telemetria 100% Anonima:** Los nodos solo transmiten valores numericos pasivos (latencia TCP RTT, tiempo de anticipacion aplicado, desfase contra cabecera Date HTTP y codigo de respuesta). Las credenciales (`userId`, `cUserId`, `serviceToken`, `passToken`) e identificadores de hardware (MAC/IMEI) se eliminan criptograficamente antes del envio. El identificador de nodo rota diariamente de forma efimera (`sha256(maquina + fecha)[:12]`), imposibilitando el rastreo entre dias distintos.
+* **Motor de Consenso (1D DBSCAN + Mediana Truncada):** El agregador central aisla ataques e intentos de manipulacion, agrupa a los nodos ganadores legitimos y deriva el desplazamiento optimo diario del Sweet Spot (por ejemplo `+25.0 ms`).
+* **Freno de Inercia:** La variacion diaria esta limitada a un maximo de `+-15.0 ms/dia` para garantizar curvas de calibracion suaves y sin oscilaciones destructivas.
+
+Los nodos descargan este Sweet Spot de consenso antes de disparar, permitiendo que cualquier usuario nuevo o descalibrado adopte de inmediato la precision colectiva descubierta por la red.
 
 ---
 
