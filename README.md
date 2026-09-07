@@ -47,6 +47,13 @@ To find and adapt to this moving target without guesswork:
 
 Nodes synchronize this consensus Sweet Spot before firing, allowing new or uncalibrated users to benefit immediately from the community's learned precision.
 
+### 4. The "Silent Approval" Phenomenon (HTTP 200 apply_result=3 vs DB State)
+At exactly 00:00:00 GMT+8, tens of thousands of automated requests congest Xiaomi's API gateway. Because of high-frequency concurrency, the frontend API frequently returns `apply_result: 3` (Quota limit reached) due to edge timeouts while Xiaomi's backend database actually commits and approves the quota grant.
+
+HyperOS BL Sniper handles this reality:
+* **Immediate Mobile Binding:** After any shot arriving in the opening second (even if labeled exhausted), users are prompted to tap `Add account and device` in Developer Options. If Android shows `Added successfully`, the permission was granted silently.
+* **Non-Destructive Fastboot Audit:** Run `python cli.py verify` to audit `/api/v3/ahaUnlock` via USB. If Xiaomi returns `code: 20036`, the silent pass is confirmed, the waiting period countdown is revealed, and background cron tasks are automatically disabled.
+
 ---
 
 ## Quick Start

@@ -47,6 +47,13 @@ Para descubrirlo y ajustarse dinamicamente sin adivinanzas:
 
 Los nodos descargan este Sweet Spot de consenso antes de disparar, permitiendo que cualquier usuario nuevo o descalibrado adopte de inmediato la precision colectiva descubierta por la red.
 
+### 4. El Fenomeno de la "Aprobacion Silenciosa" (apply_result=3 vs Base de Datos)
+A las 00:00:00 GMT+8 en punto, decenas de miles de bots saturan la pasarela API de Xiaomi. Debido a esta altisima concurrencia, la API HTTP frecuentemente devuelve `apply_result: 3` (Cupo agotado) por timeout en el balanceador, mientras que la base de datos interna transaccional de Xiaomi SI proceso y aprobo el cupo.
+
+HyperOS BL Sniper maneja esta realidad:
+* **Vinculacion Inmediata en Celular:** Tras cualquier disparo que impacte en el segundo de apertura (incluso si la API dice agotado), el script invita a tocar `Agregar cuenta y dispositivo` en Opciones de desarrollador. Si el celular muestra `Cuenta agregada con exito`, el permiso fue otorgado silenciosamente.
+* **Auditoria Fastboot No Destructiva:** Ejecuta `python cli.py verify` por cable USB para consultar directamente `/api/v3/ahaUnlock`. Si Xiaomi responde con codigo `20036`, la aprobacion silenciosa queda confirmada, se proyecta la fecha/hora exacta en que vencera la cuenta regresiva y se desactivan las tareas de cron en segundo plano automaticamente.
+
 ---
 
 ## Inicio Rapido
