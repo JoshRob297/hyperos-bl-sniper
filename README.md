@@ -14,7 +14,7 @@ Universal, cross-platform high-frequency network sniper for securing daily Xiaom
 
 | Feature | Traditional ADB Scripts | Legacy Bypass Tools | HyperOS BL Sniper (This Project) |
 | :--- | :--- | :--- | :--- |
-| **Authentication** | Manual cookie sniffing | Dead endpoints (30001) | **Official QR Code Flow + passToken Auto-Renewal** |
+| **Authentication** | Manual cookie sniffing | Dead endpoints (30001) | **Official Gateway (migate) + passToken Auto-Renewal** |
 | **Execution Mode** | Single brute-force shot | Spoofing attempts (patched) | **Interleaved Dual-Socket Double-Tap Burst** |
 | **Platform** | Requires USB phone connection | Windows only | **Windows, macOS & Linux (CLI / Headless / VPS)** |
 | **Network Layer** | Cold TLS handshakes (~500ms lag)| Plain HTTP | **Parallel Dual TLS Keep-Alive Pre-Warming** |
@@ -34,7 +34,7 @@ Xiaomi's quota opening window spans only 50 to 150 milliseconds. To eliminate th
 If the primary socket arrives slightly before midnight, the secondary socket hits the active server window.
 
 ### 2. Autonomous Token Lifecycle (`passToken` Recovery)
-When authenticating via QR code, the tool securely stores `userId`, `new_bbs_serviceToken`, and Xiaomi's long-lived `passToken`. If the service token expires (`code: 100004`), the sniper automatically contacts `account.xiaomi.com/pass/serviceLogin` to obtain a fresh session token without user intervention.
+When authenticating via the official Xiaomi gateway (`migate`) or manual injection, the tool securely stores `userId`, `new_bbs_serviceToken`, and Xiaomi's permanent `passToken`. If the service token expires (`code: 100004`), the sniper automatically contacts `account.xiaomi.com/pass/serviceLogin` to obtain a fresh session token without user intervention.
 
 ### 3. Collective Intelligence Network & The Sweet Spot
 Securing a quota requires hitting the server within an ultra-narrow 50-150ms processing window. If you fire too early, Xiaomi rejects the request with the previous second's date header; if you fire too late, the competition takes the quota. The exact arrival point that wins is the **Sweet Spot**.
@@ -74,7 +74,7 @@ Supports official browser authorization, terminal password/OTP, and manual cooki
 ```bash
 python cli.py login
 ```
-* **Option 1 (Official Assistant via `migate`):** Opens official Xiaomi web login (Browser), prompts terminal credentials (Terminal), or renders QR code.
+* **Option 1 (Official Assistant via `migate`):** Opens official Xiaomi web login (Browser), prompts terminal credentials (Terminal), or renders terminal QR code.
 * **Option 2 (Manual Cookie Injection):** Directly paste `userId` and `new_bbs_serviceToken` copied from [c.mi.com](https://c.mi.com) using browser developer tools (F12). Also accessible via `python cli.py login --manual`.
 
 ### Check Session & Account Status

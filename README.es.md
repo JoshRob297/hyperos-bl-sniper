@@ -14,7 +14,7 @@ Sniper de red de alta frecuencia universal y multiplataforma para asegurar cupos
 
 | Caracteristica | Scripts Clasicos por ADB | Herramientas Legacy de Bypass | HyperOS BL Sniper (Este Proyecto) |
 | :--- | :--- | :--- | :--- |
-| **Autenticacion** | Extraccion manual de cookies | Endpoints obsoletos (30001) | **Flujo Oficial por QR + Auto-Renovacion con passToken** |
+| **Autenticacion** | Extraccion manual de cookies | Endpoints obsoletos (30001) | **Pasarela Oficial (migate) + Auto-Renovacion con passToken** |
 | **Modo de Disparo** | Disparo unico a ciegas | Intentos de spoofing (parchados) | **Rafaga Intercalada Double-Tap con Sockets Duales** |
 | **Plataforma** | Requiere celular USB conectado | Exclusivo de Windows | **Windows, macOS y Linux (CLI / Headless / VPS)** |
 | **Capa de Red** | Handshake TLS en frio (~500ms lag)| HTTP plano sin cifrar | **Precalentamiento Dual TLS Keep-Alive en Paralelo** |
@@ -34,7 +34,7 @@ La ventana de apertura de cupos de Xiaomi dura apenas entre 50 y 150 milisegundo
 Si el socket primario llega una fraccion de segundo antes de medianoche, el secundario entra en la ventana activa del servidor.
 
 ### 2. Ciclo de Vida Autonomo del Token (Recuperacion con `passToken`)
-Al iniciar sesion mediante codigo QR, la herramienta almacena de forma segura `userId`, `new_bbs_serviceToken` y el `passToken` permanente de Xiaomi. Si el token de servicio expira (`codigo: 100004`), el sniper contacta de manera reactiva y transparente a `account.xiaomi.com/pass/serviceLogin` para obtener un nuevo token de sesion sin interrumpir la ejecucion ni requerir intervencion del usuario.
+Al iniciar sesion mediante la pasarela oficial de Xiaomi (`migate`) o inyeccion manual, la herramienta almacena de forma segura `userId`, `new_bbs_serviceToken` y el `passToken` permanente de Xiaomi. Si el token de servicio expira (`codigo: 100004`), el sniper contacta de manera reactiva y transparente a `account.xiaomi.com/pass/serviceLogin` para obtener un nuevo token de sesion sin interrumpir la ejecucion ni requerir intervencion del usuario.
 
 ### 3. Red de Inteligencia Colectiva y el Punto Dulce (Sweet Spot)
 Conseguir un cupo de HyperOS exige impactar el servidor dentro de una ventana milimetrica de 50 a 150 milisegundos. Si disparas antes, Xiaomi rechaza la solicitud con la cabecera de fecha del segundo previo; si disparas despues, la competencia consume la cuota. El punto exacto de llegada que logra la aprobacion es el **Sweet Spot (Punto Dulce)**.
@@ -74,7 +74,7 @@ Compatible con autorizacion en navegador, credenciales en terminal o inyeccion m
 ```bash
 python cli.py login
 ```
-* **Opcion 1 (Asistente oficial via `migate`):** Abre la pagina oficial de Xiaomi en navegador (Browser), permite ingresar credenciales/OTP en consola (Terminal), o muestra codigo QR.
+* **Opcion 1 (Asistente oficial via `migate`):** Abre la pagina oficial de Xiaomi en navegador (Browser), permite ingresar credenciales/OTP en consola (Terminal), o muestra codigo QR en terminal.
 * **Opcion 2 (Inyeccion manual de cookies):** Pega directamente tu `userId` y `new_bbs_serviceToken` copiados desde [c.mi.com](https://c.mi.com) con las herramientas de desarrollador (F12). Tambien accesible mediante `python cli.py login --manual`.
 
 ### Comprobar Sesion y Estado de Cuenta

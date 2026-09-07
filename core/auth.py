@@ -1,6 +1,6 @@
 """
 Authentication and Session Management for Xiaomi HyperOS Community.
-Supports QR Code login via official Long-Polling endpoints and cookie verification.
+Handles cookie verification, account state interpretation, and passToken auto-renewal.
 """
 
 import os
@@ -13,11 +13,6 @@ import urllib.request
 import urllib.parse
 import hashlib
 from typing import Tuple, Dict, Any, Optional
-
-try:
-    import segno
-except ImportError:
-    segno = None
 
 CONFIG_FILE = "config.json"
 BBS_SID = "16391"
@@ -55,125 +50,6 @@ def save_config(data: Dict[str, Any], path: str = CONFIG_FILE) -> None:
     except Exception:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-
-
-def request_qr_ticket() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """
-    Requests a temporary QR authentication ticket from Xiaomi.
-    Returns: (ticket, qr_url, lp_url)
-    """
-    url = f"https://account.xiaomi.com/longPolling/loginUrl?_qrsize=240&qs=%253Fsid%253D{BBS_SID}%2526_locale%253Den_US&bizDeviceType="
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            raw = resp.read().decode("utf-8").replace("&&&START&&&", "")
-            data = json.loads(raw)
-            if data.get("code") == 0:
-                login_url = data.get("loginUrl", "")
-                parsed = urllib.parse.urlparse(login_url)
-                params = urllib.parse.parse_qs(parsed.query)
-                ticket = params.get("ticket", [None])[0]
-                qr_url = data.get("qr")
-                lp_url = data.get("lp")
-                return ticket, qr_url, lp_url
-    except Exception as e:
-        print(f"[!] Error solicitando ticket QR a Xiaomi: {e}")
-    return None, None, None
-
-
-def render_terminal_qr(content: str, direct_link: Optional[str] = None) -> None:
-    """Renders the QR code in terminal and always displays the clickable authentication link."""
-    has_rendered = False
-    if segno is not None:
-        try:
-            qr = segno.make(content, error="m")
-            print()
-            qr.terminal(compact=True)
-            print()
-            has_rendered = True
-        except Exception:
-            pass
-
-    link = direct_link or content
-    print("=" * 65)
-    if not has_rendered:
-        print(" [!] Notice: Install 'segno' (pip install segno) to view visual QR code.")
-    print(" [+] Direct Link (Open in mobile browser if you don't scan QR):")
-    print(f"     {link}")
-    print("=" * 65 + "\n")
-
-
-def poll_qr_login(ticket: str, lp_url: Optional[str] = None, timeout_seconds: int = 240) -> Optional[Dict[str, str]]:
-    """
-    Long-polls Xiaomi login servers until the user confirms on mobile or timeout expires.
-    Uses automatic CookieJar tracking across redirects to ensure all session tokens are captured.
-    """
-    # Prefer the dedicated dynamic long-polling endpoint returned by Xiaomi
-    primary_poll_url = lp_url or f"https://sgp.lp.account.xiaomi.com/lp/s?k={ticket}"
-    fallback_poll_url = f"https://sgp.account.xiaomi.com/longPolling/login?ticket={ticket}&_json=true"
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "*/*"
-    }
-    start_time = time.time()
-    consecutive_errors = 0
-
-    print("[*] Waiting for scan and confirmation on mobile device...")
-    while time.time() - start_time < timeout_seconds:
-        poll_url = primary_poll_url if consecutive_errors < 2 else fallback_poll_url
-        try:
-            req = urllib.request.Request(poll_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                raw = resp.read().decode("utf-8").replace("&&&START&&&", "")
-                try:
-                    data = json.loads(raw)
-                except Exception:
-                    # In case of intermediate HTML redirect or gateway timeout
-                    time.sleep(1)
-                    continue
-
-                code = data.get("code")
-                consecutive_errors = 0
-
-                # Code 0 = Successful authentication (ticket is consumed after this)
-                if code == 0:
-                    location = data.get("location", "")
-                    p_user_id = str(data.get("userId", ""))
-                    c_user_id = str(data.get("cUserId", ""))
-
-                    cookies = extract_cookies_with_jar(location)
-                    cookies["userId"] = p_user_id
-                    cookies["cUserId"] = c_user_id
-                    cookies["deviceId"] = generate_stable_device_id(p_user_id)
-                    cookies["versionCode"] = OFFICIAL_VERSION_CODE
-                    cookies["versionName"] = OFFICIAL_VERSION_NAME
-                    cookies["obtained_at"] = int(time.time())
-
-                    if "passToken" in data:
-                        cookies["passToken"] = data.get("passToken")
-
-                    if "new_bbs_serviceToken" in cookies:
-                        return cookies
-                    elif data.get("serviceToken"):
-                        cookies["new_bbs_serviceToken"] = data.get("serviceToken")
-                        return cookies
-                    else:
-                        # Ticket consumed but token not captured; stop polling.
-                        print("[!] Ticket was consumed but session token was not captured.")
-                        return None
-
-                # Code 70016 = Expired ticket
-                elif code == 70016:
-                    print("[!] QR code expired. Please restart login.")
-                    return None
-        except Exception as e:
-            consecutive_errors += 1
-            if consecutive_errors >= 3:
-                print(f"[!] Repeated network error during QR polling: {e}")
-                return None
-        time.sleep(2)
-    return None
 
 
 def extract_cookies_with_jar(redirect_url: str) -> Dict[str, str]:

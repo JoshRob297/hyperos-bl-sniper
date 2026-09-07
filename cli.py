@@ -16,8 +16,7 @@ import time
 import json
 import datetime
 from core.auth import (
-    load_config, save_config, request_qr_ticket, render_terminal_qr,
-    poll_qr_login, check_session, interpret_account_state,
+    load_config, save_config, check_session, interpret_account_state,
     should_renew_token, refresh_service_token_via_passtoken,
     format_button_state, format_pass_state
 )
