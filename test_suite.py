@@ -18,7 +18,6 @@ from core.ntp import get_ntp_offset, wait_until
 from core.auth import load_config, save_config, interpret_account_state, should_renew_token, format_button_state, format_pass_state
 from core.calibration import parse_server_date_epoch, evaluate_shot_feedback, update_config_calibration, translate_xiaomi_result
 from core.scheduler import is_scheduled
-from core.community import sanitize_telemetry_payload, generate_ephemeral_node_id, fetch_community_bias
 from core.i18n import t, set_language, get_language, STRINGS
 from core.migate_auth import build_auth_block
 from core.validator import format_unlock_projection
@@ -293,45 +292,6 @@ class TestHyperOSSniper(unittest.TestCase):
         tz_tokyo = datetime.timezone(datetime.timedelta(hours=9))
         self.assertEqual(target_utc.astimezone(tz_tokyo).hour, 1)
 
-    def test_community_telemetry_sanitization_zero_leakage(self):
-        dirty_payload = {
-            "userId": "1234567890",
-            "cUserId": "h4sh3d_s3cr3t",
-            "new_bbs_serviceToken": "eyJhbGciOi...",
-            "deviceId": "FA:KE:MA:C0:00:01",
-            "passToken": "secret_pass_token",
-            "ts": 1788710400.15,
-            "rtt": 240.5,
-            "one_way": 120.25,
-            "bias_applied": 30.0,
-            "mode": "double_tap",
-            "winner": "SHOT_1_PRIMARY",
-            "shot1_res": 1,
-            "shot2_res": 3,
-            "srv_date": "Sun, 06 Sep 2026 16:00:00 GMT",
-            "arrival_delta_ms": 15.2,
-            "outcome": "SUCCESS"
-        }
-        clean = sanitize_telemetry_payload(dirty_payload)
-        self.assertNotIn("userId", clean)
-        self.assertNotIn("cUserId", clean)
-        self.assertNotIn("new_bbs_serviceToken", clean)
-        self.assertNotIn("deviceId", clean)
-        self.assertNotIn("passToken", clean)
-        self.assertEqual(clean["rtt"], 240.5)
-        self.assertEqual(clean["one_way"], 120.25)
-        self.assertEqual(clean["bias_applied"], 30.0)
-        self.assertEqual(clean["shot1_res"], 1)
-        self.assertEqual(clean["v"], "1.1.0")
-        self.assertIn("nid", clean)
-        self.assertEqual(len(clean["nid"]), 12)
-
-    def test_ephemeral_node_id_consistency_and_privacy(self):
-        id1 = generate_ephemeral_node_id()
-        id2 = generate_ephemeral_node_id()
-        self.assertEqual(id1, id2)
-        self.assertEqual(len(id1), 12)
-
     def test_migate_auth_block_mapping_and_schema(self):
         mock_pass_token = {
             "userId": "6716513520",
@@ -389,27 +349,6 @@ class TestHyperOSSniper(unittest.TestCase):
         self.assertIn("[APPROVED]", pass_1_en)
         pass_4_en = format_pass_state(4, lang="en")
         self.assertIn("[PENDING]", pass_4_en)
-
-    def test_reciprocal_community_rule(self):
-        # Caso 1: Usuario quiere recibir bias pero no compartir metricas (violacion de reciprocidad)
-        leech_config = {
-            "community": {
-                "fetch_global_bias": True,
-                "share_metrics": False
-            }
-        }
-        can_fetch_leech = leech_config["community"].get("fetch_global_bias", True) and leech_config["community"].get("share_metrics", True)
-        self.assertFalse(can_fetch_leech, "Un usuario que no comparte metricas no debe tener permiso de descargar bias")
-
-        # Caso 2: Usuario que comparte y recibe (participacion simetrica)
-        peer_config = {
-            "community": {
-                "fetch_global_bias": True,
-                "share_metrics": True
-            }
-        }
-        can_fetch_peer = peer_config["community"].get("fetch_global_bias", True) and peer_config["community"].get("share_metrics", True)
-        self.assertTrue(can_fetch_peer, "Un usuario reciproco si debe poder descargar el bias de consenso")
 
     def test_unlock_projection_calculation(self):
         # 71 horas desde ahora

@@ -26,7 +26,6 @@ from core.ntp import get_ntp_offset, wait_until
 from core.network import measure_tcp_rtt, get_next_beijing_midnight, SnipeSession
 from core.scheduler import enable_schedule, disable_schedule, is_scheduled
 from core.notifier import dispatch_notification
-from core.community import fetch_community_bias, report_telemetry_async
 from core.i18n import t, set_language, get_language
 from core.migate_auth import login_with_migate, login_manual_prompt
 from core.validator import prompt_and_prepare_device, query_official_unlock_state, format_unlock_projection, safe_fastboot_reboot
@@ -65,28 +64,6 @@ def cmd_login():
         return
 
     config["auth"] = auth_block
-
-    # Configuracion comunitaria (Opt-in interactivo con reciprocidad obligatoria)
-    if "community" not in config:
-        print(t("login_community_title"))
-        print(t("login_community_desc"))
-        try:
-            ans = input(t("login_community_prompt")).strip().lower()
-            opt_in = ans in ("", "s", "si", "sí", "y", "yes")
-        except (EOFError, KeyboardInterrupt):
-            opt_in = True
-        config["community"] = {
-            "share_metrics": opt_in,
-            "fetch_global_bias": opt_in
-        }
-
-    # Regla de Reciprocidad Simetrica: Si el usuario desea beneficiarse del bias comunitario,
-    # es obligatorio compartir metricas anonimas tras el disparo.
-    comm_cfg = config.get("community", {})
-    if comm_cfg.get("fetch_global_bias", False) and not comm_cfg.get("share_metrics", False):
-        comm_cfg["share_metrics"] = True
-        config["community"] = comm_cfg
-
     save_config(config, CONFIG_PATH)
 
     print("\n" + "=" * 60)
@@ -316,21 +293,10 @@ def cmd_run():
             sniper.close()
             return
 
-    # Compensación de ida estimada + bias adaptativo
+    # Compensación de ida estimada + bias adaptativo local
     cal_cfg = config.get("calibration", {})
     auto_tune = cal_cfg.get("auto_tune", True)
     applied_bias_ms = float(cal_cfg.get("bias_ms", 0.0)) if auto_tune else 0.0
-
-    # Consulta a la Red Comunitaria si no hay bias previo aprendido
-    # Principio de reciprocidad estricta: solo se descarga el bias si tambien se comparte
-    comm_cfg = config.get("community", {"share_metrics": True, "fetch_global_bias": True})
-    can_fetch = comm_cfg.get("fetch_global_bias", True) and comm_cfg.get("share_metrics", True)
-    if can_fetch and applied_bias_ms == 0.0:
-        comm_bias_data = fetch_community_bias()
-        if comm_bias_data and "recommended_bias_ms" in comm_bias_data:
-            rec_bias = float(comm_bias_data["recommended_bias_ms"])
-            print(t("run_community_sync", bias=rec_bias, nodes=comm_bias_data.get('total_reports', 'N/A')))
-            applied_bias_ms = rec_bias
 
     avg_tcp = sum(tcp_samples) / len(tcp_samples) if tcp_samples else 240.0
     base_one_way = (avg_tcp / 1000.0) / 2.0  # RTT / 2
@@ -394,25 +360,6 @@ def cmd_run():
             update_config_calibration(config, new_bias, telemetry)
             save_config(config, CONFIG_PATH)
             print(t("run_cal_saved", bias=new_bias))
-
-        # Emisión anónima a la Red Comunitaria (si está activado)
-        if comm_cfg.get("share_metrics", True):
-            comm_report = {
-                "ts": round(t_shoot_wall, 3),
-                "rtt": round(resp_latency, 2),
-                "one_way": round(base_one_way * 1000.0, 2),
-                "bias_applied": round(applied_bias_ms, 2),
-                "mode": snipe_mode,
-                "winner": winner,
-                "shot1_res": shot_1["apply_result"] if snipe_mode == "double_tap" else res_code,
-                "shot2_res": shot_2["apply_result"] if snipe_mode == "double_tap" else None,
-                "srv_date": server_date,
-                "arrival_delta_ms": round((arrival_est - target_epoch) * 1000.0, 2),
-                "outcome": telemetry.get("outcome", "UNKNOWN")
-            }
-            sent_ok = report_telemetry_async(comm_report)
-            if sent_ok:
-                print(t("run_community_sent"))
 
         if res_code == 1:
             win_label = t("run_win_label_primary") if winner == "SHOT_1_PRIMARY" else (t("run_win_label_secondary") if winner == "SHOT_2_SECONDARY" else t("run_win_label_single"))

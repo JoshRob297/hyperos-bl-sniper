@@ -36,23 +36,18 @@ If the primary socket arrives slightly before midnight, the secondary socket hit
 ### 2. Autonomous Token Lifecycle (`passToken` Recovery)
 When authenticating via the official Xiaomi gateway (`migate`) or manual injection, the tool securely stores `userId`, `new_bbs_serviceToken`, and Xiaomi's permanent `passToken`. If the service token expires (`code: 100004`), the sniper automatically contacts `account.xiaomi.com/pass/serviceLogin` to obtain a fresh session token without user intervention.
 
-### 3. Collective Intelligence Network & The Sweet Spot
-Securing a quota requires hitting the server within an ultra-narrow 50-150ms processing window. If you fire too early, Xiaomi rejects the request with the previous second's date header; if you fire too late, the competition takes the quota. The exact arrival point that wins is the **Sweet Spot**.
-
-To find and adapt to this moving target without guesswork:
-* **Strict Reciprocity Principle:** To benefit from the collective sweet spot calibration (`fetch_global_bias: true`), nodes must contribute their anonymous post-shot metrics (`share_metrics: true`). Leeching without sharing is disallowed by design.
-* **100% Anonymous Telemetry:** Nodes report strictly numerical metrics (Layer-4 TCP RTT, applied lead time, Xiaomi HTTP Date header delta, and outcome code). Identifiers (`userId`, `cUserId`, `serviceToken`, `passToken`, and hardware MAC/IMEI) are cryptographically stripped before transmission. Node IDs are deterministic ephemeral hashes that rotate daily (`sha256(machine + date)[:12]`), making cross-day user tracking physically impossible.
-* **Consensus Engine (1D DBSCAN + Trimmed Median):** The central aggregator filters out network outliers and attacks, calculates the cluster of winning nodes, and derives the daily optimal Sweet Spot offset (e.g. `+25.0 ms`).
-* **Inertia Clamping:** Daily shifts are restricted to a maximum of `+-15.0 ms/day` to guarantee smooth, stable calibration curves.
-
-Nodes synchronize this consensus Sweet Spot before firing, allowing new or uncalibrated users to benefit immediately from the community's learned precision.
-
-### 4. The "Silent Approval" Phenomenon (HTTP 200 apply_result=3 vs DB State)
+### 3. The "Silent Approval" Phenomenon (HTTP 200 apply_result=3 vs DB State)
 At exactly 00:00:00 GMT+8, tens of thousands of automated requests congest Xiaomi's API gateway. Because of high-frequency concurrency, the frontend API frequently returns `apply_result: 3` (Quota limit reached) due to edge timeouts while Xiaomi's backend database actually commits and approves the quota grant.
 
 HyperOS BL Sniper handles this reality:
 * **Immediate Mobile Binding:** After any shot arriving in the opening second (even if labeled exhausted), users are prompted to tap `Add account and device` in Developer Options. If Android shows `Added successfully`, the permission was granted silently.
 * **Non-Destructive Fastboot Audit:** Run `python cli.py verify` to audit `/api/v3/ahaUnlock` via USB. If Xiaomi returns `code: 20036`, the silent pass is confirmed, the waiting period countdown is revealed, and background cron tasks are automatically disabled.
+
+### 4. 100% Autonomous & Private (Zero External Server Dependencies)
+Unlike cloud-dependent tools, HyperOS BL Sniper operates purely client-side:
+* **No Telemetry Servers:** No metrics collection, no remote daemons, and no data tracking.
+* **Local Adaptive Calibration:** Clock skew and network departure times are learned and adjusted purely on your local machine based on Xiaomi's HTTP Date headers.
+* **Full Privacy:** Your account tokens, network measurements, and hardware parameters remain strictly on your own hardware.
 
 ---
 
@@ -151,7 +146,7 @@ If running on a VPS, server, or container:
 python cli.py run
 ```
 * **Early Execution Guard:** If executed more than 15 minutes before opening, the sniper enters **Deep Sleep Mode**, consuming zero CPU and zero network until T-15 minutes.
-* **T-15m:** Wakes up, re-syncs NTP clock drift, measures passive TCP latency, and downloads the community bias.
+* **T-15m:** Wakes up, re-syncs NTP clock drift, and measures passive TCP latency.
 * **T-12s:** Preheats dual TLS sockets to Singapore edge clusters.
 * **T-0:** Executes high-precision busy-wait loop and fires the double-tap burst.
 * **T+2s:** Evaluates server response, saves adaptive bias, delivers notifications, and deschedules future jobs if approved.
@@ -179,10 +174,7 @@ python cli.py run
     "auto_tune": true,
     "bias_ms": 0.0
   },
-  "community": {
-    "share_metrics": true,
-    "fetch_global_bias": true
-  },
+  "language": "es",
   "telegram": {
     "bot_token": "",
     "chat_id": ""

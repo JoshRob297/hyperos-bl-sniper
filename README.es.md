@@ -36,23 +36,18 @@ Si el socket primario llega una fraccion de segundo antes de medianoche, el secu
 ### 2. Ciclo de Vida Autonomo del Token (Recuperacion con `passToken`)
 Al iniciar sesion mediante la pasarela oficial de Xiaomi (`migate`) o inyeccion manual, la herramienta almacena de forma segura `userId`, `new_bbs_serviceToken` y el `passToken` permanente de Xiaomi. Si el token de servicio expira (`codigo: 100004`), el sniper contacta de manera reactiva y transparente a `account.xiaomi.com/pass/serviceLogin` para obtener un nuevo token de sesion sin interrumpir la ejecucion ni requerir intervencion del usuario.
 
-### 3. Red de Inteligencia Colectiva y el Punto Dulce (Sweet Spot)
-Conseguir un cupo de HyperOS exige impactar el servidor dentro de una ventana milimetrica de 50 a 150 milisegundos. Si disparas antes, Xiaomi rechaza la solicitud con la cabecera de fecha del segundo previo; si disparas despues, la competencia consume la cuota. El punto exacto de llegada que logra la aprobacion es el **Sweet Spot (Punto Dulce)**.
-
-Para descubrirlo y ajustarse dinamicamente sin adivinanzas:
-* **Regla de Reciprocidad Estricta:** Para beneficiarse de la calibracion comunitaria (`fetch_global_bias: true`), es obligatorio contribuir aportando las metricas anonimas tras el disparo (`share_metrics: true`). Beneficiarse sin compartir esta bloqueado por diseno.
-* **Telemetria 100% Anonima:** Los nodos solo transmiten valores numericos pasivos (latencia TCP RTT, tiempo de anticipacion aplicado, desfase contra cabecera Date HTTP y codigo de respuesta). Las credenciales (`userId`, `cUserId`, `serviceToken`, `passToken`) e identificadores de hardware (MAC/IMEI) se eliminan criptograficamente antes del envio. El identificador de nodo rota diariamente de forma efimera (`sha256(maquina + fecha)[:12]`), imposibilitando el rastreo entre dias distintos.
-* **Motor de Consenso (1D DBSCAN + Mediana Truncada):** El agregador central aisla ataques e intentos de manipulacion, agrupa a los nodos ganadores legitimos y deriva el desplazamiento optimo diario del Sweet Spot (por ejemplo `+25.0 ms`).
-* **Freno de Inercia:** La variacion diaria esta limitada a un maximo de `+-15.0 ms/dia` para garantizar curvas de calibracion suaves y sin oscilaciones destructivas.
-
-Los nodos descargan este Sweet Spot de consenso antes de disparar, permitiendo que cualquier usuario nuevo o descalibrado adopte de inmediato la precision colectiva descubierta por la red.
-
-### 4. El Fenomeno de la "Aprobacion Silenciosa" (apply_result=3 vs Base de Datos)
+### 3. El Fenomeno de la "Aprobacion Silenciosa" (apply_result=3 vs Base de Datos)
 A las 00:00:00 GMT+8 en punto, decenas de miles de bots saturan la pasarela API de Xiaomi. Debido a esta altisima concurrencia, la API HTTP frecuentemente devuelve `apply_result: 3` (Cupo agotado) por timeout en el balanceador, mientras que la base de datos interna transaccional de Xiaomi SI proceso y aprobo el cupo.
 
 HyperOS BL Sniper maneja esta realidad:
 * **Vinculacion Inmediata en Celular:** Tras cualquier disparo que impacte en el segundo de apertura (incluso si la API dice agotado), el script invita a tocar `Agregar cuenta y dispositivo` en Opciones de desarrollador. Si el celular muestra `Cuenta agregada con exito`, el permiso fue otorgado silenciosamente.
 * **Auditoria Fastboot No Destructiva:** Ejecuta `python cli.py verify` por cable USB para consultar directamente `/api/v3/ahaUnlock`. Si Xiaomi responde con codigo `20036`, la aprobacion silenciosa queda confirmada, se proyecta la fecha/hora exacta en que vencera la cuenta regresiva y se desactivan las tareas de cron en segundo plano automaticamente.
+
+### 4. 100% Autonomo y Privado (Cero Servidores Externos)
+A diferencia de herramientas dependientes de la nube o servicios de telemetria externa, HyperOS BL Sniper opera puramente en el cliente:
+* **Sin Servidores de Telemetria:** Cero envio de metricas, cero daemons remotos y cero rastreo de red.
+* **Calibracion Adaptativa Local:** El desfase de reloj y los tiempos de transito se aprenden y ajustan exclusivamente en tu computadora local segun las cabeceras Date de Xiaomi.
+* **Privacidad Absoluta:** Tus credenciales, medidas de latencia y parametros de hardware permanecen estrictamente en tu propio equipo.
 
 ---
 
@@ -151,7 +146,7 @@ Si ejecutas el bot manualmente en un VPS, servidor o contenedor:
 python cli.py run
 ```
 * **Proteccion contra ejecucion temprana:** Si se ejecuta con mas de 15 minutos de anticipacion, el bot entra en **Modo Deep Sleep**, consumiendo cero CPU y cero red hasta T-15 minutos.
-* **T-15m:** Despierta, resincroniza desfase NTP, perfila latencia pasiva TCP y descarga el sesgo comunitario.
+* **T-15m:** Despierta, resincroniza desfase NTP y perfila latencia pasiva TCP.
 * **T-12s:** Precalienta ambos sockets TLS hacia los clusters edge de Singapur.
 * **T-0:** Entra en bucle busy-wait al microsegundo y dispara la rafaga Double-Tap.
 * **T+2s:** Evalua la respuesta del servidor, guarda la calibracion adaptativa, despacha notificaciones y desprograma la tarea si fue aprobado.
@@ -178,10 +173,6 @@ python cli.py run
   "calibration": {
     "auto_tune": true,
     "bias_ms": 0.0
-  },
-  "community": {
-    "share_metrics": true,
-    "fetch_global_bias": true
   },
   "language": "es",
   "telegram": {

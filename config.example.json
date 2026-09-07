@@ -4,12 +4,17 @@
     "cUserId": "YOUR_C_USER_ID_HASH",
     "new_bbs_serviceToken": "YOUR_BBS_SERVICE_TOKEN"
   },
+  "sniper": {
+    "mode": "double_tap",
+    "tap_interval_ms": 100.0
+  },
+  "calibration": {
+    "auto_tune": true,
+    "bias_ms": 0.0
+  },
+  "language": "es",
   "telegram": {
     "bot_token": "",
     "chat_id": ""
-  },
-  "community": {
-    "share_metrics": true,
-    "fetch_global_bias": true
   }
 }
