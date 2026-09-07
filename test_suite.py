@@ -21,6 +21,7 @@ from core.scheduler import is_scheduled
 from core.community import sanitize_telemetry_payload, generate_ephemeral_node_id, fetch_community_bias
 from core.i18n import t, set_language, get_language, STRINGS
 from core.migate_auth import build_auth_block
+from core.validator import format_unlock_projection
 from cli import format_duration
 
 
@@ -409,6 +410,26 @@ class TestHyperOSSniper(unittest.TestCase):
         }
         can_fetch_peer = peer_config["community"].get("fetch_global_bias", True) and peer_config["community"].get("share_metrics", True)
         self.assertTrue(can_fetch_peer, "Un usuario reciproco si debe poder descargar el bias de consenso")
+
+    def test_unlock_projection_calculation(self):
+        # 71 horas desde ahora
+        proj = format_unlock_projection(71)
+        self.assertEqual(proj["wait_hours"], 71)
+        self.assertTrue(proj["unlock_epoch"] > time.time() + (70 * 3600))
+        self.assertIn(":", proj["formatted_local"])
+        self.assertIn("T", proj["iso_utc"])
+
+    def test_aha_unlock_code_semantics(self):
+        # Simulacion de respuestas oficiales de Xiaomi ahaUnlock
+        resp_waiting = {"code": 20036, "data": {"waitHour": 72}, "descEN": "Please unlock 72 hours later"}
+        self.assertEqual(resp_waiting["code"], 20036)
+        self.assertEqual(resp_waiting["data"]["waitHour"], 72)
+
+        resp_phone_missing = {"code": 20041, "descEN": "Sorry, your MI ID is not associated with a phone number"}
+        self.assertEqual(resp_phone_missing["code"], 20041)
+
+        resp_ready = {"code": 0, "encryptData": "01020304"}
+        self.assertEqual(resp_ready["code"], 0)
 
 
 if __name__ == "__main__":

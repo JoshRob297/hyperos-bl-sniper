@@ -5,6 +5,7 @@ Usage:
   python cli.py start       - Unified All-in-One: checks session, auto-schedules, and enters sniper loop
   python cli.py login       - Interactive Xiaomi official assistant or manual cookie injection
   python cli.py status      - Checks token validity and permission state
+  python cli.py verify      - Audits official USB bootloader unlock status (Fastboot/ADB) and shows remaining time
   python cli.py schedule    - Auto-registers daily background task in OS
   python cli.py unschedule  - Removes background task
   python cli.py run         - Starts the microsecond sniper loop
@@ -28,6 +29,7 @@ from core.notifier import dispatch_notification
 from core.community import fetch_community_bias, report_telemetry_async
 from core.i18n import t, set_language, get_language
 from core.migate_auth import login_with_migate, login_manual_prompt
+from core.validator import prompt_and_prepare_device, query_official_unlock_state, format_unlock_projection, safe_fastboot_reboot
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
@@ -424,6 +426,16 @@ def cmd_run():
             title = "Xiaomi Unlock"
             text = f"{readable_msg}\n• Latency: {resp_latency:.1f} ms\n• Feedback: {reason}"
             dispatch_notification(title, text, config)
+
+            # Si el resultado es 3 (Cupo agotado por saturacion), invitar a comprobar si hubo aprobacion silenciosa
+            if res_code == 3 and sys.stdin.isatty():
+                print(t("val_silent_pass_alert"))
+                try:
+                    ans_val = input(t("val_silent_prompt_ask")).strip().lower()
+                    if ans_val in ("", "s", "si", "sí", "y", "yes"):
+                        cmd_verify()
+                except (KeyboardInterrupt, EOFError):
+                    pass
     except Exception as e:
         print(t("run_shot_error", err=e))
         dispatch_notification("Error Xiaomi Unlock", str(e), config)
@@ -496,6 +508,47 @@ def cmd_start():
     cmd_run()
 
 
+def cmd_verify():
+    """
+    Audits bootloader unlock authorization via USB (Fastboot or authorized ADB)
+    directly against Xiaomi's official ahaUnlock security cluster.
+    """
+    config = load_config(CONFIG_PATH) or {}
+    if "language" in config:
+        set_language(config["language"])
+
+    success, serial = prompt_and_prepare_device()
+    if not success or not serial:
+        return
+
+    print(t("val_audit_running"))
+    result = query_official_unlock_state(config)
+    code = result.get("code")
+
+    if code == 20036:
+        # Waiting period active -> Permiso aprobado
+        data_obj = result.get("data", {})
+        wait_hours = int(data_obj.get("waitHour", 72))
+        proj = format_unlock_projection(wait_hours)
+        print("\n" + t("val_win_confirmed", hours=wait_hours, date=proj["formatted_local"]))
+        disable_schedule()
+        print(t("val_win_descheduled"))
+    elif code == 0:
+        # Ready to unlock immediately
+        print("\n" + t("val_win_ready"))
+        disable_schedule()
+    elif code == 20041:
+        # Missing phone number
+        print("\n" + t("val_fail_phone_missing"))
+    else:
+        desc = result.get("descEN") or result.get("description") or result.get("error") or str(result)
+        print("\n" + t("val_fail_not_authorized"))
+        print(f"Server response: {desc}")
+
+    print(t("val_rebooting_android"))
+    safe_fastboot_reboot()
+
+
 def main():
     if len(sys.argv) < 2:
         cmd_start()
@@ -508,6 +561,8 @@ def main():
         cmd_login()
     elif cmd == "status":
         cmd_status()
+    elif cmd in ("verify", "check", "check-unlock"):
+        cmd_verify()
     elif cmd == "schedule":
         cmd_schedule()
     elif cmd == "unschedule":

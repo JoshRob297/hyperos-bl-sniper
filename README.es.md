@@ -93,6 +93,16 @@ Para desactivar la tarea programada en cualquier momento:
 python cli.py unschedule
 ```
 
+### Auditoria Oficial de Desbloqueo y Tiempo Restante (USB Fastboot / ADB)
+Audita el estado oficial de autorizacion contra el cluster de seguridad de Xiaomi (`/api/v3/ahaUnlock`) sin borrar datos del usuario:
+```bash
+python cli.py verify
+```
+* **Deteccion USB Inteligente:** Te invita amablemente a conectar el telefono ya sea encendido (ADB) o apagado en Fastboot.
+* **Proteccion de Autorizacion ADB (RSA):** Si el celular esta conectado por ADB pero no autorizado (`unauthorized`), te guia para desbloquear la pantalla y marcar `[x] Permitir siempre desde esta computadora`. Una vez aceptado, reinicia el celular a Fastboot solo.
+* **Proyeccion de Fecha Exacta:** Si tu cuenta tiene un periodo de espera activo (codigo `20036`), calcula e imprime la fecha, hora exacta y zona horaria en que podras hacer el flash final en PC, y desprograma automaticamente el cron diario.
+* **Retorno Seguro:** Reinicia el celular de vuelta a Android de forma automatica (`fastboot reboot`).
+
 ---
 
 ## Seguridad de Cuenta y Reglas Anti-Baneo

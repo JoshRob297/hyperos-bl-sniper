@@ -93,6 +93,16 @@ To remove the scheduled task at any time:
 python cli.py unschedule
 ```
 
+### Official Bootloader Unlock & Waiting Period Audit (USB Fastboot / ADB)
+Audits your official unlock status directly against Xiaomi's security cluster (`/api/v3/ahaUnlock`) without wiping user data:
+```bash
+python cli.py verify
+```
+* **Intelligent USB Detection:** Invites you to connect your phone either powered on (ADB) or in Fastboot mode.
+* **ADB RSA Authorization Guard:** If connected via ADB in `unauthorized` state, prompts you to unlock your screen and tap `[x] Always allow from this computer`. Once accepted, reboots phone automatically into Fastboot.
+* **Exact Time Projection:** If your account is in an active waiting period (code `20036`), it calculates and prints the exact date, time, and timezone when you can perform the final flash in PC, and automatically disables future daily scheduled cron jobs.
+* **Safe Return:** Reboots phone back to Android automatically (`fastboot reboot`).
+
 ---
 
 ## Rate-Limit & Account Safety (Anti-Ban Rules)
