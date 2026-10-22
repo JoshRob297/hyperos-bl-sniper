@@ -71,6 +71,12 @@ Si no existe sesion previa, el asistente interactivo te guiara para iniciar sesi
 
 ## Comandos Detallados
 
+### Banderas Globales
+```bash
+python cli.py --help       # Referencia completa de comandos (tambien -h / help)
+python cli.py --version    # Muestra la version actual (tambien -V / version)
+```
+
 ### Inicio de Sesion con Asistente Oficial
 Compatible con autorizacion en navegador, credenciales en terminal o inyeccion manual:
 ```bash
@@ -195,7 +201,7 @@ Una vez que el sniper obtiene el cupo, imprime una guia clara en consola y envia
 ---
 
 ## Suite de Pruebas
-Ejecuta la suite integrada de pruebas unitarias y de regresion (26 tests que cubren criptografia, zonas horarias, auto-renovacion de tokens, sanitizacion de telemetria y formato Clean UI):
+Ejecuta la suite integrada de pruebas unitarias y de regresion (27 tests que cubren criptografia, zonas horarias, auto-renovacion de tokens, sanitizacion de telemetria y formato Clean UI):
 ```bash
 python test_suite.py
 ```

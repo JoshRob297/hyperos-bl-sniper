@@ -71,6 +71,12 @@ If no session exists, the assistant prompts for login. Once saved, it validates 
 
 ## Detailed Commands
 
+### Global Flags
+```bash
+python cli.py --help       # Full command reference (also -h / help)
+python cli.py --version    # Print the current version (also -V / version)
+```
+
 ### Login via Authentication Assistant
 Supports official browser authorization, terminal password/OTP, and manual cookie injection:
 ```bash
@@ -195,7 +201,7 @@ Once the sniper wins a quota, it prints a post-approval runbook and dispatches a
 ---
 
 ## Test Suite
-Run the built-in regression test suite (26 unit tests covering cryptography, time zones, token auto-renewal, network payload sanitization, and clean output):
+Run the built-in regression test suite (27 unit tests covering cryptography, time zones, token auto-renewal, network payload sanitization, and clean output):
 ```bash
 python test_suite.py
 ```

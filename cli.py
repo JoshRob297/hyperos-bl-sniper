@@ -30,6 +30,8 @@ from core.i18n import t, set_language, get_language
 from core.migate_auth import login_with_migate, login_manual_prompt
 from core.validator import prompt_and_prepare_device, query_official_unlock_state, format_unlock_projection, safe_fastboot_reboot
 
+__version__ = "1.3.1"
+
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
 
@@ -496,12 +498,29 @@ def cmd_verify():
     safe_fastboot_reboot()
 
 
+def _print_help():
+    lines = (__doc__ or "").strip().splitlines()
+    if not lines:
+        return
+    print(f"{lines[0]} v{__version__}")
+    if len(lines) > 1:
+        print("\n".join(lines[1:]))
+
+
 def main():
     if len(sys.argv) < 2:
         cmd_start()
         return
 
     cmd = sys.argv[1].lower()
+
+    if cmd in ("-h", "--help", "help"):
+        _print_help()
+        return
+    if cmd in ("-v", "-V", "--version", "version"):
+        print(f"HyperOS Bootloader Quota Sniper v{__version__}")
+        return
+
     if cmd in ("start", "--start"):
         cmd_start()
     elif cmd == "login":
@@ -518,7 +537,7 @@ def main():
         cmd_run()
     else:
         print(f"Comando desconocido: {cmd}")
-        print(__doc__)
+        _print_help()
 
 
 if __name__ == "__main__":

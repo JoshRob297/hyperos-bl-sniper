@@ -20,3 +20,6 @@ env/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Local convenience wrappers
+verify.sh
